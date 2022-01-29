@@ -1,151 +1,157 @@
---Generar una consulta para devolver el correo electrónico, el nombre, el apellido y el género de todos los oyentes de música jazz.
+--Generar una consulta para devolver el correo electrónico, el nombre, el apellido y el género, nombre del artista, 
+--titulo del almbum y el pais de todos los oyentes de música jazz.
 -- Devolver una lista ordenada alfabéticamente por dirección de correo electrónico comenzando con A.SELECT DISTINCT C.EMAIL,
 
-SELECT DISTINCT C.EMAIL,
-  	C.FIRSTNAME as Nombre_Cliente,
-  	C.LASTNAME as Apellido_Cliente,
-  	G.NAME as Nombre_Género,
-             AR.Name as Nombre_Artista,
-             A.Title as Titulo_Album,
-             C.Country as País
+SELECT  C.EMAIL,
+  	C.FIRSTNAME AS [Nombre Cliente],
+  	C.LASTNAME AS [Apellido Cliente],
+  	G.NAME AS [Nombre Género],
+             AR.Name AS [Nombre del Artista],
+             A.Title AS [Titulo Album],
+             C.Country AS [País]
              
   FROM customers C
-  JOIN invoices I ON C.CUSTOMERID = I.CUSTOMERID
-  JOIN invoice_items IL ON IL.InvoiceLineId = I.InvoiceId
-  JOIN tracks T ON IL.TrackId = T.TrackId
-  JOIN genres G ON T.GenreId = G.GenreId
-  JOIN albums A ON T.AlbumId = A.AlbumId
-  JOIN artists AR ON A.ArtistId = AR.ArtistId
+  INNER JOIN invoices I ON C.CUSTOMERID = I.CUSTOMERID
+  INNER JOIN invoice_items IL ON IL.InvoiceLineId = I.InvoiceId
+  INNER JOIN tracks T ON IL.TrackId = T.TrackId
+  INNER JOIN genres G ON T.GenreId = G.GenreId
+  INNER JOIN albums A ON T.AlbumId = A.AlbumId
+  INNER JOIN artists AR ON A.ArtistId = AR.ArtistId
   WHERE G.NAME Like 'Jazz'
   ORDER BY 1;
 
-
---Ahora que sabemos que a nuestros clientes les encanta la música jazz, podemos decidir a qué músicos invitar a tocar en el concierto.
+DROP TABLE Consulta1;
+--2 Ahora que sabemos que a nuestros clientes les encanta la música jazz, podemos decidir a qué músicos invitar a tocar en el concierto.
 --Se invitarán los artistas que han escrito la mayor cantidad de música jazz en nuestro conjunto de datos. 
 --Proporcionar una consulta que devuelva el nombre del artista y el recuento total de pistas de las 10 mejores bandas de jazz.
 
-  SELECT AR.NAME AS Nombre_del_Artista,
-  	COUNT(T.NAME) as Recuento_Total
+  SELECT AR.NAME AS [Nombre del Artista],
+  	COUNT(T.NAME) AS [Recuento Total]
   FROM tracks T
-  JOIN playlist_track PT ON T.TrackId = PT.TrackId
-  JOIN playlists PL ON PT.PlaylistId = PT.PlaylistId
-  JOIN genres G ON T.GENREID = G.GENREID
-  JOIN media_types mt ON t.MediaTypeId = mt.MediaTypeId
-  JOIN albums AL ON AL.ALBUMID = T.ALBUMID
-  JOIN artists AR ON AR.ARTISTID = AL.ARTISTID
-  WHERE G.NAME = 'Jazz'
+  INNER JOIN playlist_track PT ON T.TrackId = PT.TrackId
+  INNER JOIN playlists PL ON PT.PlaylistId = PT.PlaylistId
+  INNER JOIN genres G ON T.GENREID = G.GENREID
+  INNER JOIN media_types mt ON t.MediaTypeId = mt.MediaTypeId
+  INNER JOIN albums AL ON AL.ALBUMID = T.ALBUMID
+  INNER JOIN artists AR ON AR.ARTISTID = AL.ARTISTID
+  WHERE G.NAME IN ('Jazz' , 'Rock')
   GROUP BY 1
   ORDER BY 2 DESC;
-
-
---Primero, encuentrar qué artista ha ganado más según las Líneas de Facturación.
-
- SELECT Y.NAME AS Nombre_Artista,
-  SUM(TOTAL) AS Ganancia_Total
-  FROM
-  (SELECT  X.NAME, X.UNITPRICE * X.QUANTITY AS TOTAL
-   FROM
-    (SELECT   AR.NAME,
-     IL.UnitPrice,
-     IL.Quantity
-   FROM artists AR
-   JOIN albums AL ON AR.ArtistId = AL.ArtistId
-   JOIN tracks T ON AL.AlbumId = T.AlbumId
-   JOIN invoice_items IL ON T.TrackId = IL.TrackId
-   ORDER BY 1 DESC) AS X) AS Y
-  GROUP BY 1
-  ORDER BY 2 DESC
-  LIMIT 1;
   
---Ahora en base al artista es necesario encontrar los clientes que más han gastado en ese artista.
+Select * from artists;
+DROP TABLE Consulta2;
+--3 Primero, encuentrar los artistas ha ganado más según las Líneas de Facturación.
 
-SELECT AR.NAME AS Nombre_del_Artista,
-       SUM(il.UnitPrice * il.Quantity)   AS cantidad_gastada,
-       c.CustomerId    AS Id_Cliente,
-       c.FirstName     AS Nombre_Cliente,
-       c.LastName      AS Apellido_Cliente
+SELECT a.Name, SUM(il.Quantity * il.UnitPrice) AS [Cantidad ganada]
+FROM artists a
+	 INNER JOIN albums al ON a.ArtistId = al.ArtistId
+            INNER JOIN genres G ON t.GENREID = G.GENREID
+            INNER JOIN tracks t  ON t.AlbumId = AL.AlbumId 
+            INNER JOIN invoice_items il ON t.TrackId = il.Trackid
+            INNER JOIN invoices i ON il.InvoiceId = i.InvoiceId
+            INNER JOIN customers c ON c.CustomerId = i.CustomerId
+GROUP BY a.Name
+ORDER BY [Cantidad ganada] DESC;
+
+
+--4 Ahora en base al artista es necesario encontrar los clientes que más han gastado en ese artista.
+
+SELECT AR.NAME AS [Nombre del Artista],
+       SUM(il.UnitPrice * il.Quantity)   AS [Cantidad gastada],
+       c.CustomerId    AS [Id Cliente],
+       c.FirstName     AS [Nombre Cliente],
+       c.LastName      AS [Apellido Cliente]
   FROM artists AR 
-  JOIN albums AL ON AR.ArtistId = AL.ArtistId 
-  JOIN genres G ON T.GENREID = G.GENREID
-  JOIN tracks t  ON t.AlbumId = AL.AlbumId 
-  JOIN invoice_items il ON t.TrackId = il.Trackid 
-  JOIN invoices i ON il.InvoiceId = i.InvoiceId
-  JOIN customers c ON c.CustomerId = i.CustomerId 
+  INNER JOIN albums AL ON AR.ArtistId = AL.ArtistId 
+  INNER JOIN genres G ON T.GENREID = G.GENREID
+  INNER JOIN tracks t  ON t.AlbumId = AL.AlbumId 
+  INNER JOIN invoice_items il ON t.TrackId = il.Trackid 
+  INNER JOIN invoices i ON il.InvoiceId = i.InvoiceId
+  INNER JOIN customers c ON c.CustomerId = i.CustomerId 
  WHERE AR.NAME = 'Iron Maiden' 
  GROUP BY c.CustomerId 
- ORDER BY cantidad_gastada DESC;
+ ORDER BY [Cantidad gastada] DESC;
 
 
 
---¿Qué género musical es el más popular entre los clientes?
+--5 ¿Qué género musical es el más popular entre los clientes?
 
-SELECT g.Name Nombre_del_Genero,
+SELECT g.Name AS [Nombre del Género],
 
-  SUM(il.UnitPrice * il.Quantity) cantidad_gastada
-
+  SUM(il.UnitPrice * il.Quantity) AS [Cantidad gastada]
 FROM genres g 
-JOIN artists AR 
-JOIN tracks t ON g.GenreId = t.GenreId
-JOIN playlist_track PT ON T.TrackId = PT.TrackId
-JOIN media_types mt ON t.MediaTypeId = mt.MediaTypeId 
-JOIN albums AL ON AR.ArtistId = AL.ArtistId 
-JOIN invoice_items il ON t.TrackId = il.TrackId
+INNER JOIN artists AR 
+INNER JOIN tracks t ON g.GenreId = t.GenreId
+INNER JOIN playlist_track PT ON T.TrackId = PT.TrackId
+INNER JOIN media_types mt ON t.MediaTypeId = mt.MediaTypeId 
+INNER JOIN albums AL ON AR.ArtistId = AL.ArtistId 
+INNER JOIN invoice_items il ON t.TrackId = il.TrackId
 GROUP BY 1
-ORDER BY cantidad_gastada DESC;
+ORDER BY [Cantidad gastada] DESC;
 
---¿Qué nivel de importe total en dólares ha ganado cada artista?
+--6 ¿Qué nivel de importe total en dólares ha ganado cada artista?
 
-SELECT a.Name Nombre_del_Artista, g.Name Nombre_del_Genero,
-  SUM(il.UnitPrice * il.Quantity) cantidad__ganada,
+SELECT a.Name AS [Nombre del Artista], g.Name AS [Nombre del Género],
+  SUM(il.UnitPrice * il.Quantity) AS [Cantidad ganada],
   CASE
     WHEN SUM(il.UnitPrice * il.Quantity) > 50 THEN 'Alto'
     WHEN SUM(il.UnitPrice * il.Quantity) > 20 THEN 'Medio'
     ELSE 'Bajo'
   END AS Nivel
 FROM artists a
-JOIN albums al ON a.ArtistId = al.ArtistId
-JOIN media_types mt ON t.MediaTypeId = mt.MediaTypeId 
-JOIN tracks t ON t.AlbumId = al.AlbumId
-JOIN genres g ON g.GenreId = t.GenreId
-JOIN invoice_items il ON il.TrackId = t.TrackId
-JOIN invoices i ON i.InvoiceId = il.InvoiceId
+INNER JOIN albums al ON a.ArtistId = al.ArtistId
+INNER JOIN tracks t ON t.AlbumId = al.AlbumId
+INNER JOIN genres g ON g.GenreId = t.GenreId
+INNER JOIN invoice_items il ON il.TrackId = t.TrackId
+INNER JOIN invoices i ON i.InvoiceId = il.InvoiceId
 GROUP BY 1
-ORDER BY cantidad__ganada DESC;
+ORDER BY [Cantidad ganada] DESC;
 
 
 
---¿Quiénes son los 10 clientes que más han gastado en Antônio Carlos Jobim?
+-- 7 ¿Quiénes son los 3 clientes que más han gastado en Apocalyptica?
 
 SELECT
-  a.Name Nombre_del_Artista,
-  c.CustomerId,
-  c.FirstName,
-  c.LastName,
-  SUM(il.UnitPrice * il.Quantity) cantidad_gastada
+  a.Name AS [Nombre del Artista],
+  c.CustomerId AS  [Id Cliente],
+  c.FirstName AS [Nombre Cliente],
+  c.LastName  AS [Apellido Cliente],
+  SUM(il.UnitPrice * il.Quantity) AS [Cantidad gastada]
+FROM artists a
+INNER JOIN albums al ON a.ArtistId = al.ArtistId
+INNER JOIN tracks t ON t.AlbumId = al.AlbumId
+INNER JOIN invoice_items il ON il.TrackId = t.TrackId
+INNER JOIN invoices i ON i.InvoiceId = il.InvoiceId
+INNER JOIN customers c ON c.CustomerId = i.CustomerId
+WHERE a.Name = 'Apocalyptica'
+GROUP BY c.CustomerId
+ORDER BY [Cantidad gastada] DESC
+LIMIT 3;
+ 
+select * from invoices;
+--8 ¿Quiénes son los 10 clientes que más han gastado en Antônio Carlos Jobim?
+
+SELECT
+  a.Name AS [Nombre del Artista],
+  c.CustomerId AS [Id Cliente],
+  c.FirstName  AS [Nombre Cliente],
+  c.LastName   AS [Apellido Cliente],
+  SUM(il.UnitPrice * il.Quantity) AS [Cantidad gastada]
 
 FROM artists a
-JOIN albums al ON a.ArtistId = al.ArtistId
-JOIN tracks t ON t.AlbumId = al.AlbumId
-JOIN invoice_items il ON il.TrackId = t.TrackId
-JOIN invoices i ON i.InvoiceId = il.InvoiceId
-JOIN customers c
-  ON c.CustomerId = i.CustomerId
+INNER JOIN albums al ON a.ArtistId = al.ArtistId
+INNER JOIN tracks t ON t.AlbumId = al.AlbumId
+INNER JOIN invoice_items il ON il.TrackId = t.TrackId
+INNER JOIN invoices i ON i.InvoiceId = il.InvoiceId
+INNER JOIN customers c ON c.CustomerId = i.CustomerId
 WHERE a.Name = 'Antônio Carlos Jobim'
 GROUP BY c.CustomerId
-ORDER BY cantidad_gastada DESC
+ORDER BY [Cantidad gastada] DESC
 LIMIT 10;
- 
 
-Select * from artists
---
-select t.TrackId, t.AlbumId
-from tracks t
-group by t.AlbumId
-having COUNT(DISTINCT t.TrackId) >= 12;
+--9 Se necesita premiar al empleado que mas pistas, generos y artistas vendido en estados unidos en el 2009
 
---Se necesita premiar al empleado que mas pistas, generos y artistas vendido en estados unidos en el 2009
-
-SELECT C.FirstName AS [NOMBRE],
+SELECT E.FirstName AS [NOMBRE],
        substr(I.InvoiceDate,1,4) AS [AÑOS],
        I.BillingCountry AS [PAIS],
        T.Name AS [PISTA],
@@ -164,9 +170,31 @@ WHERE substr(I.InvoiceDate,1,4) LIKE '2009' AND I.BillingCountry LIKE 'USA'
 GROUP BY 1
 ORDER BY SUM(I.Total)  DESC
 LIMIT 1;
+
+--10 Los 5 clientes que mas han comprado por artista y genero en todos los años 
+
+SELECT C.FirstName AS [NOMBRE],
+       substr(I.InvoiceDate,1,4) AS [AÑOS],
+       G.Name AS [GENERO],
+       AR.Name AS [ARTISTA],
+       SUM(I.Total) AS [TOTAL DE VENTAS]
+  FROM employees E
+       INNER JOIN customers C ON C.SupportRepId = E.EmployeeId
+       INNER JOIN invoices I ON I.CustomerId = C.CustomerId
+       INNER JOIN invoice_items IV ON IV.InvoiceId = I.InvoiceId
+       INNER JOIN tracks T ON T.TrackId = IV.TrackId
+       INNER JOIN genres G ON G.GenreId = T.GenreId
+       INNER JOIN albums A ON A.AlbumId = T.AlbumId
+       INNER JOIN artists AR ON AR.ArtistId = A.ArtistId
+GROUP BY 1
+ORDER BY SUM(I.Total)  DESC
+LIMIT 5;
+
+
  
-Select * from customers
-Select * from genres
-Select * from albums
-Select * from artists
-Select * from playlist_track
+Select * from customers;
+Select * from genres;
+Select * from albums;
+Select * from artists;
+Select * from playlist_track;
+Select * from invoice_items;
